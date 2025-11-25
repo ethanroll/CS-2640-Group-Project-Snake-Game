@@ -1,6 +1,6 @@
 #Camilo Hernandez 
 #Ethan Caoile
-#Ryan Hao
+#Ryan Hoang
 #Snake Game Porject
 
 	.eqv bitmap,  0x10010000
