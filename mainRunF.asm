@@ -12,6 +12,6 @@
 main: 
 	jal startMovement 
 	
-exit call:
+exitCall:
  	li $v0, 10
  	syscall 
