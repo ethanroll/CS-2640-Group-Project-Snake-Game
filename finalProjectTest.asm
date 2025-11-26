@@ -11,12 +11,26 @@ appleColor:      .word 0xFF0000    # red
 backgroundColor: .word 0xFFFFFF    # white
 
 .text
-main:
+
+#.globl to be able to read and access from different file 
+.globl screenInitiation
+.globl headDrawing
+.globl pixelGen
+#main:
     	#Clear screen
-    	la  $t0, frameBuffer        # pointer to framebuffer
-    	li  $t1, 2048               # number of tiles 64 * 32 = 2048 tiles
-    	lw  $t2, backgroundColor    # white color
+    	#la  $t0, frameBuffer        # pointer to framebuffer
+    	#li  $t1, 2048               # number of tiles 64 * 32 = 2048 tiles
+    	#lw  $t2, backgroundColor    # white color
     	
+    	
+screenInitiation: 
+	#Changes the color screen
+	#draws the border lines 
+	#Clear screen 8192 pixels 
+	
+	la $t0, frameBuffer
+	li $t1, 8192
+	lw $t2, backgroundColor
 clearLoop:
     	sw  $t2, 0($t0)			# store white color value to the frame
     	addi $t0, $t0, 4		# move to next pixel
@@ -67,8 +81,30 @@ drawBorderRight:
     	addi $t1, $t1, -1
     	bnez $t1, drawBorderRight
 
-exit:
-    	# Exit program
-   	li $v0, 10
-    syscall
+headDrawing: 
+	#Will creating and generate the pixl of snake head 
+	move $a0 , $s0
+	move $a1, $s1
+	lw $a2 snakeColor 
+	
+	jal setPixel 
+	jr $ra 
+	
+pixelGen:
+	#produces the pixil color using x, y, and color 
+	li $t0 , 256
+	mul $t0, $a1, $t0  #y * 256 
+	
+	# multiplies x by 4 
+	sll $t1, $a0, 2
+	
+	add $t0, $t0, $t1  #total offset 
+	
+	la $t2, frameBuffer
+	add $t0, $t0, $t2, 
+	
+	sw $a2, 0($t0)
+	
+	jr $ra 
+
 	
