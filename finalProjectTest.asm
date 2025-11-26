@@ -24,13 +24,13 @@ backgroundColor: .word 0xFFFFFF    # white
     	
     	
 screenInitiation: 
-		#Changes the color screen
-		#draws the border lines 
-		#Clear screen 8192 pixels 
+	#Changes the color screen
+	#draws the border lines 
+	#Clear screen 8192 pixels 
 	
-		la $t0, frameBuffer
-		li $t1, 8192
-		lw $t2, backgroundColor
+	la $t0, frameBuffer
+	li $t1, 8192
+	lw $t2, backgroundColor
 clearLoop:
     	sw  $t2, 0($t0)			# store white color value to the frame
     	addi $t0, $t0, 4		# move to next pixel
@@ -55,7 +55,7 @@ drawTopBorder:
     	lw  $t2, borderColor
     	
 drawBottomBorder:
-   		sw  $t2, 0($t0)
+   	sw  $t2, 0($t0)
     	addi $t0, $t0, 4
     	addi $t1, $t1, -1
     	bnez $t1, drawBottomBorder
@@ -71,48 +71,24 @@ drawBorderLeft:
     	bnez $t1, drawBorderLeft
     	
     	#Right wall
-		la $t0, frameBuffer	 	#start at column 63
-		addi $t0, $t0, 252	 	#rightmost column 
-		li $t1, 32		 		#number of rows
-		lw $t2, borderColor
+	la $t0, frameBuffer	 	#start at column 63
+	addi $t0, $t0, 252	 	#rightmost column 
+	li $t1, 32		 		#number of rows
+	lw $t2, borderColor
+	
 drawBorderRight:
     	sw $t2, 0($t0)
     	addi $t0, $t0, 256    # move down one row
     	addi $t1, $t1, -1
     	bnez $t1, drawBorderRight
-spawnApple:
-    	#Generate random X
-    	li   $v0, 42          # syscall 42 = random int
-    	li   $a1, 62          # range 0–61
-    	syscall
-    	addi $t3, $a0, 1      # x = random + 1
 
-    	#Generate random Y
-    	li   $v0, 42		  # syscall 42 = random int
-    	li   $a1, 30          # range 0–29
-    	syscall
-    	addi $t4, $a0, 1      # y = random + 1
-
-    	#Compute pixel address
-    	#offset = (y * 64 + x) * 4
-    	li   $t5, 64
-   		mul  $t6, $t4, $t5
-    	add  $t6, $t6, $t3 
-    	mul $t6, $t6, 4
-
-    	la   $t7, frameBuffer
-    	add  $t7, $t7, $t6    # final framebuffer address
-
-    	#Draw the apple
-    	lw   $t8, appleColor
-    	sw   $t8, 0($t7)
 headDrawing: 
-	#Will create and generate the pixel of the snake head 
+	#Will creating and generate the pixl of snake head 
 	move $a0 , $s0
 	move $a1, $s1
 	lw $a2 snakeColor 
 	
-	jal setPixel 
+	jal pixelGen
 	jr $ra 
 	
 pixelGen:
