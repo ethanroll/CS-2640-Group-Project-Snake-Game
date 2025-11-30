@@ -82,14 +82,28 @@ drawBorderRight:
     	addi $t1, $t1, -1
     	bnez $t1, drawBorderRight
 
-headDrawing: 
-	#Will creating and generate the pixl of snake head 
-	move $a0 , $s0
-	move $a1, $s1
-	lw $a2 snakeColor 
-	
-	jal pixelGen
-	jr $ra 
+#update for middle placement
+headDrawing:
+    
+    # Use $t9 as a simple "initialized" flag.
+
+    beq $t9, $zero, initHead    # if first time, go set center
+    j   drawHead   # otherwise just draw
+
+initHead:
+    li  $s0, 32     # center x on 64-wide field
+    li  $s1, 16    # center y on 32-tall field
+    li  $t9, 1     # mark as initialized
+
+drawHead:
+    # Will create and generate the pixel of snake head 
+    move $a0, $s0               # x
+    move $a1, $s1               # y
+    lw   $a2, snakeColor        # color
+
+    jal  pixelGen
+    jr   $ra
+
 	
 pixelGen:
 	#produces the pixil color using x, y, and color 
@@ -102,7 +116,7 @@ pixelGen:
 	add $t0, $t0, $t1  #total offset 
 	
 	la $t2, frameBuffer
-	add $t0, $t0, $t2, 
+	add $t0, $t0, $t2
 	
 	sw $a2, 0($t0)
 	
