@@ -1,125 +1,139 @@
-#Final Project: SNAKE GAME
-#Group Member: Camilo Hernandez, Ethan Caoile, Ryan Hoang
 
-.data
-# Framebuffer: 512 × 256 pixels, 4 bytes per pixel = 0x80000 bytes (= 131072) 
-frameBuffer: .space 0x80000
-
-borderColor:     .word 0x0000FF    # blue
-snakeColor:      .word 0x00FF00    # green
-appleColor:      .word 0xFF0000    # red
-backgroundColor: .word 0xFFFFFF    # white
-
-.text
-
-#.globl to be able to read and access from different file 
-.globl screenInitiation
-.globl headDrawing
-.globl pixelGen
-#main:
-    	#Clear screen
-    	#la  $t0, frameBuffer        # pointer to framebuffer
-    	#li  $t1, 2048               # number of tiles 64 * 32 = 2048 tiles
-    	#lw  $t2, backgroundColor    # white color
-    	
-    	
-screenInitiation: 
-	#Changes the color screen
-	#draws the border lines 
-	#Clear screen 8192 pixels 
-	
-	la $t0, frameBuffer
-	li $t1, 8192
-	lw $t2, backgroundColor
-clearLoop:
-    	sw  $t2, 0($t0)			# store white color value to the frame
-    	addi $t0, $t0, 4		# move to next pixel
-    	addi $t1, $t1, -1		# number of tile decrese 1 each time loop call
-    	bnez $t1, clearLoop
-    	
-    	#Top wall
-    	la  $t0, frameBuffer
-    	li  $t1, 64				#save spot for 64 tiles
-    	lw  $t2, borderColor	#load the border color to $t2
-    	
-drawTopBorder:
-    	sw  $t2, 0($t0)			#store the borderColor to the frameBuffer		
-    	addi $t0, $t0, 4
-    	addi $t1, $t1, -1
-    	bnez $t1, drawTopBorder
-    	
-    	#Bottom wall
-    	la  $t0, frameBuffer
-    	addi $t0, $t0, 7936      #start of bottom row: 31 x 64 x 4
-    	li  $t1, 64
-    	lw  $t2, borderColor
-    	
-drawBottomBorder:
-   	sw  $t2, 0($t0)
-    	addi $t0, $t0, 4
-    	addi $t1, $t1, -1
-    	bnez $t1, drawBottomBorder
-    	
-    	#Left wall
-    	la $t0, frameBuffer		#start at column 0
-    	li $t1, 32				#number of rows
-    	lw $t2, borderColor
-drawBorderLeft:
-    	sw $t2, 0($t0)
-    	addi $t0, $t0, 256		#add 256 to move to next row
-    	addi $t1, $t1, -1
-    	bnez $t1, drawBorderLeft
-    	
-    	#Right wall
-	la $t0, frameBuffer	 	#start at column 63
-	addi $t0, $t0, 252	 	#rightmost column 
-	li $t1, 32		 		#number of rows
-	lw $t2, borderColor
-	
-drawBorderRight:
-    	sw $t2, 0($t0)
-    	addi $t0, $t0, 256    # move down one row
-    	addi $t1, $t1, -1
-    	bnez $t1, drawBorderRight
-
-#update for middle placement
-headDrawing:
-    
-    # Use $t9 as a simple "initialized" flag.
-
-    beq $t9, $zero, initHead    # if first time, go set center
-    j   drawHead   # otherwise just draw
-
-initHead:
-    li  $s0, 32     # center x on 64-wide field
-    li  $s1, 16    # center y on 32-tall field
-    li  $t9, 1     # mark as initialized
+# Group Member: Camilo Hernandez, Ethan Caoile, Ryan Hoang
+#Testing for the boarder, apple appearance, and head appearance and logic 
+        .text
+        .globl screenInitiation
+        .globl drawHead
+        .globl spawnApple
+        .globl pixelGen
 
 drawHead:
-    # Will create and generate the pixel of snake head 
-    move $a0, $s0               # x
-    move $a1, $s1               # y
-    lw   $a2, snakeColor        # color
+    # Compute pixel address: offset = (y*64 + x)*4
+    sll $t1, $s5, 6        # y * 64
+    add $t1, $t1, $s4      # + x
+    sll $t1, $t1, 2        # * 4 bytes
+    la  $t2, frameBuffer
+    add $t1, $t1, $t2      # $t1 points to pixel
 
-    jal  pixelGen
-    jr   $ra
+    lw  $t7, 0($t1)        # current color at that pixel
 
-	
+    # Compare with background
+    lw  $t8, backgroundColor
+    bne $t7, $t8, checkApple
+
+   #draw head 
+    sw  $s7, 0($t1)
+    jr  $ra
+
+checkApple:
+    lw  $t9, appleColor
+    bne $t7, $t9, quit     # if hit object end program
+
+    # if apple hit grow
+    sw  $s7, 0($t1)
+
+    move $t0, $ra          # save return address
+    jal  spawnApple
+    move $ra, $t0          # restore return address
+
+    jr  $ra
+
+quit:
+    li  $v0, 10
+    syscall
+
+#start to generate the screen 
+screenInitiation:
+    # Clear screen to background
+    la $t0, frameBuffer
+    li $t1, 8192
+    lw $t2, backgroundColor
+clearLoop:
+    sw  $t2, 0($t0)
+    addi $t0, $t0, 4
+    addi $t1, $t1, -1
+    bnez $t1, clearLoop
+
+    # Top border (row 0)
+    la  $t0, frameBuffer
+    li  $t1, 64
+    lw  $t2, borderColor
+drawTopBorder:
+    sw  $t2, 0($t0)
+    addi $t0, $t0, 4
+    addi $t1, $t1, -1
+    bnez $t1, drawTopBorder
+
+    # Bottom border (row 31)
+    la  $t0, frameBuffer
+    addi $t0, $t0, 7936       # 31 * 64 * 4
+    li  $t1, 64
+    lw  $t2, borderColor
+drawBottomBorder:
+    sw  $t2, 0($t0)
+    addi $t0, $t0, 4
+    addi $t1, $t1, -1
+    bnez $t1, drawBottomBorder
+
+    # Left border (col 0)
+    la $t0, frameBuffer
+    li $t1, 32
+    lw $t2, borderColor
+drawBorderLeft:
+    sw $t2, 0($t0)
+    addi $t0, $t0, 256        # next row (64 * 4)
+    addi $t1, $t1, -1
+    bnez $t1, drawBorderLeft
+
+    # Right border (col 63)
+    la $t0, frameBuffer
+    addi $t0, $t0, 252        # 63 * 4
+    li $t1, 32
+    lw $t2, borderColor
+drawBorderRight:
+    sw $t2, 0($t0)
+    addi $t0, $t0, 256
+    addi $t1, $t1, -1
+    bnez $t1, drawBorderRight
+
+    jr $ra
+
+
+
+#randomly spawns in the apple 
+spawnApple:
+    # Random X: 1 to 61 (inside borders)
+    li  $v0, 42             # random int range
+    li  $a1, 61
+    syscall                 # result in $a0: 0..60
+    addi $t3, $a0, 1        # 1..61
+
+    # Random Y: 1 to 29 (inside borders)
+    li  $v0, 42
+    li  $a1, 29
+    syscall                 # result in $a0: 0..28
+    addi $t4, $a0, 1        # 1..29
+
+    # Compute pixel address
+    li  $t5, 64
+    mul $t6, $t4, $t5       #  y * 64
+    add $t6, $t6, $t3       # + x
+    sll $t6, $t6, 2         # * 4 bytes
+    la  $t7, frameBuffer
+    add $t7, $t7, $t6
+
+    lw  $t8, appleColor
+    sw  $t8, 0($t7)
+    jr  $ra
+
+#pixel gen helper 
+#helps allocate the memory in the buffer 
 pixelGen:
-	#produces the pixil color using x, y, and color 
-	li $t0 , 256
-	mul $t0, $a1, $t0  #y * 256 
-	
-	# multiplies x by 4 
-	sll $t1, $a0, 2
-	
-	add $t0, $t0, $t1  #total offset 
-	
-	la $t2, frameBuffer
-	add $t0, $t0, $t2
-	
-	sw $a2, 0($t0)
-	
-	jr $ra 
-
-	
+    li  $t0, 64
+    mul $t0, $a1, $t0       # y * 64
+    add $t0, $t0, $a0       # + x
+    sll $t0, $t0, 2         # * 4 bytes
+    la  $t2, frameBuffer
+    add $t0, $t0, $t2
+    sw  $a2, 0($t0)
+    jr  $ra
