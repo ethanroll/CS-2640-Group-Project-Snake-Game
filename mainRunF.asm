@@ -1,4 +1,4 @@
-
+# mainRunF.asm
 # Group Member: Camilo Hernandez, Ethan Caoile, Ryan Hoang
 #main run code in assembly which has all import from joint files 
 #contains hexadecimal valuse for color, movement, etc
@@ -22,6 +22,10 @@ snakeUp:         .word 0x0300FF00  # FLAG=03
 snakeHeadPosx:  .word 16          # $s4 will hold X
 snakeHeadPosy:  .word 13          # $s5 will hold Y
 
+# Add these new initializers for the tail
+snakeTailPosx:  .word 16      # $s2 will hold Tail X
+snakeTailPosy:  .word 13      # $s3 will hold Tail Y
+
 .text
  .globl main
  
@@ -33,6 +37,14 @@ main:
     # Load initial position
     lw $s4, snakeHeadPosx
     lw $s5, snakeHeadPosy
+    
+    # load initial tail pos
+    lw $s2, snakeTailPosx
+    lw $s3, snakeTailPosy
+    
+    # draw head at start before loop start
+    lw $s7, snakeRight
+    jal drawHead
 
     # Start moving right
     j moveRight
