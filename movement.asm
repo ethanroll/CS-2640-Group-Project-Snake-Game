@@ -1,7 +1,7 @@
 # file that handles the movement of the snake 
 # Logic and overall movement converting the keyboard keycaps into memory 
 .text
-.globl moveRight 			# called in the main to start initilally moving right
+.globl moveRight 			# called in the main to start initially moving right
 
 
 # label for the snake to move right
