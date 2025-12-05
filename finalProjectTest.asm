@@ -1,6 +1,5 @@
-
-# Group Member: Camilo Hernandez, Ethan Caoile, Ryan Hoang
-#Testing for the boarder, apple appearance, and head appearance and logic 
+# Group Members: Camilo Hernandez, Ethan Caoile, Ryan Hoang
+# Testing for the border, apple appearance, and head appearance and logic 
         .text
         .globl screenInitiation
         .globl drawHead
@@ -137,3 +136,8 @@ pixelGen:
     add $t0, $t0, $t2
     sw  $a2, 0($t0)
     jr  $ra
+
+# clear pixel to clear tail
+clearPixel:
+	lw $a2, backgroundColor
+	j pixelGen
