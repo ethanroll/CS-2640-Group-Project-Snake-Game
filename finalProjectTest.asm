@@ -1,53 +1,143 @@
-# mainRunF.asm
-# Group Member: Camilo Hernandez, Ethan Caoile, Ryan Hoang
-#main run code in assembly which has all import from joint files 
-#contains hexadecimal valuse for color, movement, etc
+# Group Members: Camilo Hernandez, Ethan Caoile, Ryan Hoang
+# Testing for the border, apple appearance, and head appearance and logic 
+        .text
+        .globl screenInitiation
+        .globl drawHead
+        .globl spawnApple
+        .globl pixelGen
 
-.data
-# Framebuffer: 512 × 256 pixels, 4 bytes per pixel = 0x80000 bytes (= 131072) 
-frameBuffer: .space 0x80000
+drawHead:
+    # Compute pixel address: offset = (y*64 + x)*4
+    sll $t1, $s5, 6        # y * 64
+    add $t1, $t1, $s4      # + x
+    sll $t1, $t1, 2        # * 4 bytes
+    la  $t2, frameBuffer
+    add $t1, $t1, $t2      # $t1 points to pixel
+
+    lw  $t7, 0($t1)        # current color at that pixel
+
+    # Compare with background
+    lw  $t8, backgroundColor
+    bne $t7, $t8, checkApple
+
+   #draw head 
+    sw  $s7, 0($t1)
+    jr  $ra
+
+checkApple:
+    lw  $t9, appleColor
+    bne $t7, $t9, quit     # if hit object end program
+
+    # if apple hit grow
+    sw  $s7, 0($t1)
+
+    move $t0, $ra          # save return address
+    jal  spawnApple
+    move $ra, $t0          # restore return address
+
+    jr  $ra
+
+quit:
+    li  $v0, 10
+    syscall
+
+#start to generate the screen 
+screenInitiation:
+    # Clear screen to background
+    la $t0, frameBuffer
+    li $t1, 8192
+    lw $t2, backgroundColor
+clearLoop:
+    sw  $t2, 0($t0)
+    addi $t0, $t0, 4
+    addi $t1, $t1, -1
+    bnez $t1, clearLoop
+
+    # Top border (row 0)
+    la  $t0, frameBuffer
+    li  $t1, 64
+    lw  $t2, borderColor
+drawTopBorder:
+    sw  $t2, 0($t0)
+    addi $t0, $t0, 4
+    addi $t1, $t1, -1
+    bnez $t1, drawTopBorder
+
+    # Bottom border (row 31)
+    la  $t0, frameBuffer
+    addi $t0, $t0, 7936       # 31 * 64 * 4
+    li  $t1, 64
+    lw  $t2, borderColor
+drawBottomBorder:
+    sw  $t2, 0($t0)
+    addi $t0, $t0, 4
+    addi $t1, $t1, -1
+    bnez $t1, drawBottomBorder
+
+    # Left border (col 0)
+    la $t0, frameBuffer
+    li $t1, 32
+    lw $t2, borderColor
+drawBorderLeft:
+    sw $t2, 0($t0)
+    addi $t0, $t0, 256        # next row (64 * 4)
+    addi $t1, $t1, -1
+    bnez $t1, drawBorderLeft
+
+    # Right border (col 63)
+    la $t0, frameBuffer
+    addi $t0, $t0, 252        # 63 * 4
+    li $t1, 32
+    lw $t2, borderColor
+drawBorderRight:
+    sw $t2, 0($t0)
+    addi $t0, $t0, 256
+    addi $t1, $t1, -1
+    bnez $t1, drawBorderRight
+
+    jr $ra
 
 
-borderColor:     .word 0x0000FF    # blue
-appleColor:      .word 0xFF0000    # red
-backgroundColor: .word 0xFFFFFF    # white
 
+#randomly spawns in the apple 
+spawnApple:
+    # Random X: 1 to 61 (inside borders)
+    li  $v0, 42             # random int range
+    li  $a1, 61
+    syscall                 # result in $a0: 0..60
+    addi $t3, $a0, 1        # 1..61
 
-snakeRight:      .word 0x0000FF00  # FLAG=00
-snakeDown:       .word 0x0100FF00  # FLAG=01
-snakeLeft:       .word 0x0200FF00  # FLAG=02
-snakeUp:         .word 0x0300FF00  # FLAG=03
+    # Random Y: 1 to 29 (inside borders)
+    li  $v0, 42
+    li  $a1, 29
+    syscall                 # result in $a0: 0..28
+    addi $t4, $a0, 1        # 1..29
 
-# State Variables
-snakeHeadPosx:  .word 16          # $s4 will hold X
-snakeHeadPosy:  .word 13          # $s5 will hold Y
+    # Compute pixel address
+    li  $t5, 64
+    mul $t6, $t4, $t5       #  y * 64
+    add $t6, $t6, $t3       # + x
+    sll $t6, $t6, 2         # * 4 bytes
+    la  $t7, frameBuffer
+    add $t7, $t7, $t6
 
-# Add these new initializers for the tail
-snakeTailPosx:  .word 16      # $s2 will hold Tail X
-snakeTailPosy:  .word 13      # $s3 will hold Tail Y
+    lw  $t8, appleColor
+    sw  $t8, 0($t7)
+    jr  $ra
 
-.text
- .globl main
- 
-main:
-    # Initialize screen and apple
-    jal screenInitiation
-    jal spawnApple
+#pixel gen helper 
+#helps allocate the memory in the buffer 
+pixelGen:
+    li  $t0, 64
+    mul $t0, $a1, $t0       # y * 64
+    add $t0, $t0, $a0       # + x
+    sll $t0, $t0, 2         # * 4 bytes
+    la  $t2, frameBuffer
+    add $t0, $t0, $t2
+    sw  $a2, 0($t0)
+    jr  $ra
 
-    # Load initial position
-    lw $s4, snakeHeadPosx
-    lw $s5, snakeHeadPosy
-    
-    # load initial tail pos
-    lw $s2, snakeTailPosx
-    lw $s3, snakeTailPosy
-    
-    # draw head at start before loop start
-    lw $s7, snakeRight
-    jal drawHead
-
-    # Start moving right
-    j moveRight
-
-        .include "movement.asm"
-        .include "finalProjectTest.asm"
+# clear pixel to clear tail
+clearPixel:
+	lw $a2, backgroundColor
+	j pixelGen
