@@ -45,7 +45,7 @@ main:
     	lw $s2, snakeTailPosx
     	lw $s3, snakeTailPosy
 
-    	# --- Initialize snake body arrays with the head ---
+    	#Initialize snake body arrays with the head
     	la $t0, snakeBodyX
     	sw $s4, 0($t0)
     	la $t0, snakeBodyY
